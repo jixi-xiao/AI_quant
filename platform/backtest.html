@@ -363,10 +363,17 @@ let debounceTimer;
 function debounceRun() { clearTimeout(debounceTimer); debounceTimer = setTimeout(doBacktest, 500); }
 
 // Slider sync
-$('shortWindow').oninput = () => { $('shortWindowVal').textContent = $('shortWindow').value; debounceRun(); };
-$('longWindow').oninput = () => { $('longWindowVal').textContent = $('longWindow').value; debounceRun(); };
-$('positionPct').oninput = () => { $('positionPctVal').textContent = $('positionPct').value; debounceRun(); };
-['minHolding','initCapital','commission','stampTax','slippage'].forEach(id => $(id).oninput = debounceRun);
+function syncParamGroup0() {
+  if (state.paramGroups.length > 0) {
+    state.paramGroups[0] = {short:+$('shortWindow').value, long:+$('longWindow').value, holding:+$('minHolding').value, posPct:+$('positionPct').value};
+  }
+  updateParamGroups();
+}
+$('shortWindow').oninput = () => { $('shortWindowVal').textContent = $('shortWindow').value; syncParamGroup0(); debounceRun(); };
+$('longWindow').oninput = () => { $('longWindowVal').textContent = $('longWindow').value; syncParamGroup0(); debounceRun(); };
+$('positionPct').oninput = () => { $('positionPctVal').textContent = $('positionPct').value; syncParamGroup0(); debounceRun(); };
+$('minHolding').oninput = () => { syncParamGroup0(); debounceRun(); };
+['initCapital','commission','stampTax','slippage'].forEach(id => $(id).oninput = debounceRun);
 ['startDate','endDate'].forEach(id => $(id).onchange = debounceRun);
 
 async function loadData() {
@@ -404,10 +411,7 @@ async function doBacktest() {
   $('resultsArea').classList.remove('hidden');
 
   const startT = performance.now();
-  const stratParams = [
-    {short_window:+$('shortWindow').value, long_window:+$('longWindow').value, min_holding_days:+$('minHolding').value, position_pct:+$('positionPct').value},
-    ...state.paramGroups.slice(1).map(g=>({short_window:g.short, long_window:g.long, min_holding_days:g.holding, position_pct:g.posPct}))
-  ];
+  const stratParams = state.paramGroups.map(g => ({short_window:g.short, long_window:g.long, min_holding_days:g.holding, position_pct:g.posPct}));
   const costParams = {
     initial_capital: +$('initCapital').value * 10000,
     commission_rate: +$('commission').value / 100,
